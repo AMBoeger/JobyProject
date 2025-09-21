@@ -123,3 +123,44 @@ void Simulator::setup (int vehicle_count, int charger_count) {
     this->charger_list = myChargers;
     return;
 }
+
+   //Search through map, if found combine stats, else insert empty stats table per present plane type
+std::unordered_map<std::string, statistics> Simulator::gatherStatistics() {
+    std::unordered_map<std::string, statistics> statsMap;
+    for(int i = 0; i < this->plane_list.size(); i++) {
+        statistics* curStats;
+        eVTOL curPlane = this->plane_list[i];
+        if((statsMap.find(curPlane.getType()) == statsMap.end())) {
+            statistics newStats;
+            statsMap[curPlane.getType()] = newStats;
+            curStats = &statsMap[curPlane.getType()];
+        } else {
+            curStats = &statsMap[curPlane.getType()];
+        }
+        curStats->distanceTraveled += curPlane.getDistanceTraveled();
+        curStats->flightTime += curPlane.getFlightTime();
+        curStats->totalFlights += curPlane.getTotalFlights();
+        curStats->timeCharged += curPlane.getTimeCharged();
+        curStats->totalFaults += curPlane.getTotalFaults();
+        curStats->totalPassengerMiles += curPlane.getPassengerCount() * curPlane.getDistanceTraveled();
+    }
+    return statsMap;
+}
+
+
+void Simulator::printStatistics() {
+    std::unordered_map<std::string, statistics> statsMap = gatherStatistics();
+    //Print Out Stats
+    std::cout << "\nSimulator Finished \n\nStatistics:\n";
+    auto it = statsMap.begin();
+    for(auto it = statsMap.begin(); it != statsMap.end(); it++) {
+        std::cout << "Type: " << it->first << std::endl;
+        std::cout << "Average Flight Time: " << it->second.flightTime / it->second.totalFlights << " hrs\n";
+        std::cout << "Average Distance Traveled: " << it->second.distanceTraveled / it->second.totalFlights << " mi\n";
+        std::cout << "Average Charging Time: " << it->second.timeCharged / it->second.totalFlights << " hrs\n";
+        std::cout << "Total Flights: " << it->second.totalFlights << std::endl;
+        std::cout << "Total Faults: " << it->second.totalFaults << std::endl;
+        std::cout << "Total Passenger Miles: " << it->second.totalPassengerMiles << " mi\n";
+        std::cout << "\n\n";
+    }
+}

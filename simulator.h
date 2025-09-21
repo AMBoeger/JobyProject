@@ -25,5 +25,6 @@ class Simulator {
         void checkFlying();
         void updatePlaneStates();
         void debug_output();
+        std::unordered_map<std::string, statistics> gatherStatistics();
 
 };
