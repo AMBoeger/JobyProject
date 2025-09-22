@@ -6,6 +6,7 @@
 
 
 class eVTOL{
+     friend class eVTOL_Factory;
     private:
         statistics flightStats;
         double currBatteryLevel_kwH;
