@@ -5,13 +5,11 @@
 #include <ctime>
 #include <unordered_map>
 
-const eVTOL_template* Simulator::planeOptions[] = {&Alpha, &Bravo, &Charlie, &Delta, &Echo};
-
-void Simulator::run(double hours, bool DEBUG_FLAG) {
+void Simulator::run(double hours) {
     std::cout << "SIMULATION START\n\n";
     int totalCycles = hours / TIME_SLICE;
     for(int curCycle = 0; curCycle < totalCycles; curCycle++) {
-        if(DEBUG_FLAG) { 
+        if(SIM_DEBBUGFLAG) { 
             debug_output();
         }
         
@@ -29,6 +27,7 @@ void Simulator::debug_output() {
     }
 
 }
+
 void Simulator::checkFlying() {
         // Check Flying Planes
         for(int i = 0; i < plane_list.size(); i++) {
@@ -41,90 +40,74 @@ void Simulator::checkFlying() {
 }
 
 
-//Charges planes parked at chargers, moves planes into chargers if one is available, 
+//Charges planes parked at chargers, moves other planes into chargers if one is available, 
 //Frees up charger if plane as at 100%
 void Simulator::checkChargers() {
     for(int i = 0; i < charger_list.size(); i++) {
-        eCharger* currCharger = &charger_list[i];
-
-        //Open Charger, Available Plane
-        if(!currCharger->isOccupied() && charge_queue.size()) {
-            eVTOL* currPlane = charge_queue.front();
-            charge_queue.pop();
-            currCharger->occupyCharger(currPlane);
-            currPlane->setStatus(CHARGING);
-            currPlane->chargeBattery_hrs(TIME_SLICE);
-
-        //Charge other Planes currently at chargers
-        } else if(currCharger->isOccupied()) {
-            eVTOL* currPlane = currCharger->getPlane();
-            currPlane->chargeBattery_hrs(TIME_SLICE);
-            if(currPlane->getBatteryLevel() >= 0.999) {
-                currCharger->makeAvailable();
-            }
-        }
+        eCharger& currCharger = charger_list[i];
+        currCharger.chargePlane_ifOccupied();
+        currCharger.attachPlane_ifAvailable(charge_queue);
     }
     return;
 }
 
-//State Machine Logic, also updates stats based on state
+void Simulator::updateState_flying(eVTOL* currPlane) {
+    if(currPlane->getBatteryLevel() <= MIN_BATTERY_LVL) {
+        currPlane->setStatus(WAITING_TO_CHARGE);
+        charge_queue.push(currPlane);
+        return;
+    }
+    currPlane->updateFlightTime(TIME_SLICE);
+    currPlane->updateDistance(TIME_SLICE * currPlane->getCruiseSpeed_mph());
+}
+
+void Simulator::updateState_charging(eVTOL* currPlane) {
+    if(currPlane->getBatteryLevel() >= MAX_BATTERY_LVL) {
+        currPlane->setStatus(FLYING);
+        currPlane->updateTotalFlights();
+    }
+    currPlane->updateTimeCharged(TIME_SLICE);
+}
+
+//Main State Machine Logic
 void Simulator::updatePlaneStates() {
     for(int i = 0; i < plane_list.size(); i++) {
         eVTOL* currPlane = &plane_list[i];
         switch(currPlane->getStatus()) {
             case FLYING:
-                if(currPlane->getBatteryLevel() <= 0.001) {
-                    currPlane->setStatus(WAITING_TO_CHARGE);
-                    charge_queue.push(currPlane);
-                    continue;
-                }
-                currPlane->updateFlightTime(TIME_SLICE);
-                currPlane->updateDistance(TIME_SLICE * currPlane->getCruiseSpeed_mph());
+                updateState_flying(currPlane);
                 break;
 
             case WAITING_TO_CHARGE:
+                //Just keep waiting
                 break;
 
             case CHARGING:
-                if(currPlane->getBatteryLevel() >= 0.999) {
-                    currPlane->setStatus(FLYING);
-                }
-                currPlane->updateTimeCharged(TIME_SLICE);
+                updateState_charging(currPlane);
                 break;
 
             default:
                 //Need Error Handling
                 break;
         }
-
     }
 }
 
-void Simulator::setup (int vehicle_count, int charger_count) {
-    std::vector<eVTOL> myPlanes;
-    std::vector<eCharger> myChargers;
 
-    //Setup RNG Portion
-    std::minstd_rand generator(std::time(0)); 
-    std::uniform_int_distribution<> dist(0, sizeof(planeOptions) / sizeof(planeOptions[0]) - 1);
+
+void Simulator::setup (int vehicle_count, int charger_count) {
 
     //Create n number of chargers
     for(int i = 0; i < charger_count; i++) {
-        myChargers.push_back(eCharger());
+        this->charger_list.push_back(eCharger());
     }
+    //Create NUM_PLANES list of planes
+    this->plane_list = eVTOL_Factory::generate_PlaneList(NUM_PLANES);
 
-    //Randomly pick (uniformly) from plane options, to generate test set
-    for(int i = 0; i < vehicle_count; i++) {
-        myPlanes.push_back(eVTOL(planeOptions[dist(generator)]));
-    }
-
-    //Attach to simulator
-    this->plane_list = myPlanes;
-    this->charger_list = myChargers;
     return;
 }
 
-   //Search through map, if found combine stats, else insert empty stats table per present plane type
+//Search through map, if found combine stats, else insert empty stats table per present plane type
 std::unordered_map<std::string, statistics> Simulator::gatherStatistics() {
     std::unordered_map<std::string, statistics> statsMap;
     for(int i = 0; i < this->plane_list.size(); i++) {

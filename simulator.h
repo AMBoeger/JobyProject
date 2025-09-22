@@ -4,18 +4,19 @@
 #include <vector>
 #include <queue>
 #include <unordered_map>
+#include"definitions.h"
+#include "eVTOL_Factory.h"
+
 
 
 class Simulator {
     public:
         void setup(int vehicle_count, int charger_count);
-        void run(double hours, bool DEBUG_FLAG);
+        void run(double hours);
         void printStatistics();
 
 
     private:
-        static const eVTOL_template* planeOptions[numberOfTemplates];
-        const double TIME_SLICE = 0.01;   //Frequency is 1/100 hour
         double TOTAL_TIME = 0;
         std::vector<eCharger> charger_list;
         std::vector<eVTOL> plane_list;
@@ -25,6 +26,8 @@ class Simulator {
         void checkFlying();
         void updatePlaneStates();
         void debug_output();
+        void updateState_flying(eVTOL* plane);
+        void updateState_charging(eVTOL* plane);
         std::unordered_map<std::string, statistics> gatherStatistics();
 
 };
