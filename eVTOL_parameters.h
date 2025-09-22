@@ -15,7 +15,7 @@ struct statistics {
     double flightTime = 0;
     double distanceTraveled = 0;
     double timeCharged = 0;
-    double totalFaults = 0;
+    int totalFaults = 0;
     double totalPassengerMiles = 0;
     int    totalFlights = 1;
 };

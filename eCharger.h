@@ -13,7 +13,7 @@ class eCharger {
         void makeAvailable() {currentPlane = NULL;}
         void occupyCharger(eVTOL* plane) {currentPlane = plane;}
         eVTOL* getPlane() {return currentPlane;}
-        void chargePlane_ifOccupied();
-        void attachPlane_ifAvailable(std::queue<eVTOL*> &charge_queue);
+        void chargePlane_ifOccupied(const double TIME_SLICE);
+        void attachPlane_ifAvailable(std::queue<eVTOL*> &charge_queue, const double TIME_SLICE);
 };
 

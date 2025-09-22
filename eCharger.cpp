@@ -1,7 +1,7 @@
 #include "eCharger.h"
 
 
-void eCharger::chargePlane_ifOccupied() {
+void eCharger::chargePlane_ifOccupied(const double TIME_SLICE) {
         if(this->isOccupied()) {
             eVTOL* currPlane = this->getPlane();
             currPlane->chargeBattery_hrs(TIME_SLICE);
@@ -11,7 +11,7 @@ void eCharger::chargePlane_ifOccupied() {
         }
 }
 
-void eCharger::attachPlane_ifAvailable(std::queue<eVTOL*> &charge_queue) {
+void eCharger::attachPlane_ifAvailable(std::queue<eVTOL*> &charge_queue, const double TIME_SLICE) {
        //Open Charger, Available Plane
         if(!this->isOccupied() && charge_queue.size()) {
             eVTOL* plane = charge_queue.front();

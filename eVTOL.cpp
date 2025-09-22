@@ -21,7 +21,7 @@ void eVTOL::updateTotalFlights() {
 
 double eVTOL::chargeBattery_hrs(double hours) {
     if(hours < 0) {return 0;}
-    return adjustBattery_kWh(hours * this->parameters.batteryCapacity_kWh * (1 / this->parameters.timeCharge_hrs));
+    return adjustBattery_kWh( (hours / this->parameters.timeCharge_hrs) * ( this->parameters.batteryCapacity_kWh));
 }
 
 double eVTOL::dischargeBattery_mi(double distance_mi) {

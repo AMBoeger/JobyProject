@@ -6,11 +6,12 @@
 #include <unordered_map>
 #include <iomanip>
 
-void Simulator::run(double hours) {
+
+void Simulator::run() {
     std::cout << "SIMULATION START\n\n";
-    int totalCycles = hours / TIME_SLICE;
+    int totalCycles = config.SIMULATOR_HOURS / config.TIME_SLICE;
     for(int curCycle = 0; curCycle < totalCycles; curCycle++) {
-        if(SIM_DEBUG) { 
+        if(config.SIM_DEBUG_FLAG) { 
             debug_output();
         }
         
@@ -22,7 +23,7 @@ void Simulator::run(double hours) {
 
 void Simulator::debug_output() {
     std::cout << "\nIncrement Simulator... TIME: " + std::to_string(this->TOTAL_TIME) << " hrs " << std::endl;
-    this->TOTAL_TIME += TIME_SLICE;
+    this->TOTAL_TIME += config.TIME_SLICE;
     for(eVTOL plane : plane_list) {
         std::cout << plane.toString();
     }
@@ -34,8 +35,8 @@ void Simulator::checkFlying() {
         for(int i = 0; i < plane_list.size(); i++) {
             eVTOL* currentPlane = &plane_list[i];
             if(currentPlane->isFlying()) {
-                currentPlane->dischargeBattery_mi(TIME_SLICE * currentPlane->getCruiseSpeed_mph());
-                currentPlane->testFault_discrete(TIME_SLICE);
+                currentPlane->dischargeBattery_mi(config.TIME_SLICE * currentPlane->getCruiseSpeed_mph());
+                currentPlane->testFault_discrete(config.TIME_SLICE);
             }
         }
 }
@@ -46,28 +47,28 @@ void Simulator::checkFlying() {
 void Simulator::checkChargers() {
     for(int i = 0; i < charger_list.size(); i++) {
         eCharger& currCharger = charger_list[i];
-        currCharger.chargePlane_ifOccupied();
-        currCharger.attachPlane_ifAvailable(charge_queue);
+        currCharger.chargePlane_ifOccupied(config.TIME_SLICE);
+        currCharger.attachPlane_ifAvailable(charge_queue, config.TIME_SLICE);
     }
     return;
 }
 
 void Simulator::updateState_flying(eVTOL* currPlane) {
-    if(currPlane->getBatteryLevel() <= MIN_BATTERY_LVL) {
+    if(currPlane->getBatteryLevel() <= config.MIN_BATTERY) {
         currPlane->setStatus(WAITING_TO_CHARGE);
         charge_queue.push(currPlane);
         return;
     }
-    currPlane->updateFlightTime(TIME_SLICE);
-    currPlane->updateDistance(TIME_SLICE * currPlane->getCruiseSpeed_mph());
+    currPlane->updateFlightTime(config.TIME_SLICE);
+    currPlane->updateDistance(config.TIME_SLICE * currPlane->getCruiseSpeed_mph());
 }
 
 void Simulator::updateState_charging(eVTOL* currPlane) {
-    if(currPlane->getBatteryLevel() >= MAX_BATTERY_LVL) {
+    if(currPlane->getBatteryLevel() >= config.MAX_BATTERY) {
         currPlane->setStatus(FLYING);
         currPlane->updateTotalFlights();
     }
-    currPlane->updateTimeCharged(TIME_SLICE);
+    currPlane->updateTimeCharged(config.TIME_SLICE);
 }
 
 //Main State Machine Logic
@@ -96,14 +97,14 @@ void Simulator::updatePlaneStates() {
 
 
 
-void Simulator::setup (int vehicle_count, int charger_count) {
+void Simulator::setup() {
 
     //Create n number of chargers
-    for(int i = 0; i < charger_count; i++) {
+    for(int i = 0; i < config.NUM_CHARGERS; i++) {
         this->charger_list.push_back(eCharger());
     }
     //Create NUM_PLANES list of planes
-    this->plane_list = eVTOL_Factory::generate_PlaneList(NUM_PLANES);
+    this->plane_list = eVTOL_Factory::generate_PlaneList(config.NUM_PLANES);
 
     return;
 }
