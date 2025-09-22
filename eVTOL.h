@@ -17,10 +17,13 @@ class eVTOL{
             //Planes start fully charged and taking off.
             currBatteryLevel_kwH = params.batteryCapacity_kWh;
             status = FLYING;
+            uid = uid_next++;
         }
+        static uint16_t uid_next;
 
     public:
         eVTOL_parameters& parameters;
+        uint16_t uid;
 
         // Updating information
         void updateFlightTime(double time_hrs);

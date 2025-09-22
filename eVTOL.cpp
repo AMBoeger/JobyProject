@@ -1,5 +1,7 @@
 #include "eVTOL.h"
 #include <iostream>
+#include <iomanip>
+
 
 void eVTOL::updateFlightTime(double time_hrs) {
     if(time_hrs < 0) {return;}
@@ -81,9 +83,14 @@ std::string eVTOL::string_Status() {
 }
 
 std::string eVTOL::toString() {
-    std::string temp = "";
-    temp += this->getType() + " ";
-    temp += std::to_string(this->currBatteryLevel_kwH) + " kWh ";
-    temp += this->string_Status() + "\n";
-    return temp;
+    std::ostringstream ss;
+    ss << std::left << std::setw(12) << this->getType();
+    ss << std::setw(8)  << ("ID:" + std::to_string(this->uid));
+    ss << std::setw(12) << (std::to_string(this->currBatteryLevel_kwH) + " kWh ");
+    ss << std::setw(28) << this->string_Status();
+    ss << "\n";
+    return ss.str();
 }
+
+uint16_t eVTOL::uid_next = 0;
+

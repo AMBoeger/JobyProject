@@ -4,12 +4,13 @@
 #include <random>
 #include <ctime>
 #include <unordered_map>
+#include <iomanip>
 
 void Simulator::run(double hours) {
     std::cout << "SIMULATION START\n\n";
     int totalCycles = hours / TIME_SLICE;
     for(int curCycle = 0; curCycle < totalCycles; curCycle++) {
-        if(SIM_DEBBUGFLAG) { 
+        if(SIM_DEBUG) { 
             debug_output();
         }
         
@@ -131,19 +132,48 @@ std::unordered_map<std::string, statistics> Simulator::gatherStatistics() {
 }
 
 
+//Crediting StackOverflow for pretty output template - Original console output was ugly.
 void Simulator::printStatistics() {
     std::unordered_map<std::string, statistics> statsMap = gatherStatistics();
-    //Print Out Stats
-    std::cout << "\nSimulator Finished \n\nStatistics:\n";
-    auto it = statsMap.begin();
-    for(auto it = statsMap.begin(); it != statsMap.end(); it++) {
-        std::cout << "Type: " << it->first << std::endl;
-        std::cout << "Average Flight Time: " << it->second.flightTime / it->second.totalFlights << " hrs\n";
-        std::cout << "Average Distance Traveled: " << it->second.distanceTraveled / it->second.totalFlights << " mi\n";
-        std::cout << "Average Charging Time: " << it->second.timeCharged / it->second.totalFlights << " hrs\n";
-        std::cout << "Total Flights: " << it->second.totalFlights << std::endl;
-        std::cout << "Total Faults: " << it->second.totalFaults << std::endl;
-        std::cout << "Total Passenger Miles: " << it->second.totalPassengerMiles << " mi\n";
-        std::cout << "\n\n";
+    const int typeWidth      = 12;
+    const int flightWidth    = 12;
+    const int distanceWidth  = 15;
+    const int chargeWidth    = 15;
+    const int totalWidth     = 10;
+    const int faultsWidth    = 12;
+    const int passMilesWidth = 20;
+
+    std::cout << "\nSimulator Finished\n\nStatistics:\n";
+    std::cout << std::left
+              << std::setw(typeWidth)      << "Type"
+              << std::setw(flightWidth)    << "Avg Flight"
+              << std::setw(distanceWidth)  << "Avg Distance"
+              << std::setw(chargeWidth)    << "Avg Charge"
+              << std::setw(totalWidth)     << "Flights"
+              << std::setw(faultsWidth)    << "Faults"
+              << std::setw(passMilesWidth) << "Passenger Miles"
+              << "\n";
+
+    std::cout << std::string(typeWidth + flightWidth + distanceWidth + chargeWidth + totalWidth + faultsWidth + passMilesWidth, '-') << "\n";
+
+    //Go through map of collected stats and print
+    for (auto it = statsMap.begin(); it != statsMap.end(); ++it) {
+        const std::string& type = it->first;
+        const statistics& stats  = it->second;
+
+        double avgFlight   = stats.flightTime / stats.totalFlights;
+        double avgDistance = stats.distanceTraveled / stats.totalFlights;
+        double avgCharge   = stats.timeCharged / stats.totalFlights;
+
+        std::cout << std::left
+                  << std::setw(typeWidth)      << type
+                  << std::setw(flightWidth)    << std::fixed << std::setprecision(2) << avgFlight
+                  << std::setw(distanceWidth)  << std::fixed << std::setprecision(2) << avgDistance
+                  << std::setw(chargeWidth)    << std::fixed << std::setprecision(2) << avgCharge
+                  << std::setw(totalWidth)     << stats.totalFlights
+                  << std::setw(faultsWidth)    << stats.totalFaults
+                  << std::setw(passMilesWidth) << std::fixed << std::setprecision(2) << stats.totalPassengerMiles
+                  << "\n";
     }
+    std::cout << "\n";
 }
